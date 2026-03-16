@@ -32,7 +32,7 @@ export const UserTable = pgTable("user", {
 export const HostelTable = pgTable("hostel", {
     hostelId: serial("hostel_id").primaryKey(),
     userId: integer("user_id").notNull().references(() => UserTable.userId).notNull(),
-    landlordId: integer("landlord_id").notNull().references(() => UserTable.userId, { onDelete: "cascade" }),
+    // landlordId: integer("landlord_id").notNull().references(() => UserTable.userId, { onDelete: "cascade" }),
     hostelName: varchar("hostel_name", { length: 50 }).notNull(),
     location: varchar("location", { length: 100 }).notNull(),
     contact_number: varchar("contact_number", { length: 20 }).notNull(),
@@ -113,7 +113,7 @@ export const UserRelations = relations(UserTable, ({ many, one }) => ({
 export const HostelRelations = relations(HostelTable, ({ many, one }) => ({
     rooms: many(RoomTable),
     user: one(UserTable, { fields: [HostelTable.userId], references: [UserTable.userId] }),
-    landlord: one(UserTable, { fields: [HostelTable.landlordId], references: [UserTable.userId] }),
+    // landlord: one(UserTable, { fields: [HostelTable.landlordId], references: [UserTable.userId] }),
     bookings: many(BookingTable),
     maintenance: many(MaintenanceTable),
     reviews: many(ReviewTable),
