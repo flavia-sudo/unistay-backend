@@ -64,7 +64,8 @@ export const updateHostelController = async (req: Request, res: Response) => {
             return res.status(400).json({error: "Invalid hostel ID"});
         }
         const hostel = req.body;
-        const imagePath = req.file?.path;
+        const imagePath = (req as any).file?.path;
+        console.log(imagePath);
         const updatedData = {
             ...hostel,
             ...(imagePath && {image: imagePath})
