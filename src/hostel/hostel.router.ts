@@ -10,19 +10,17 @@ import {
   getHostelByUserIdController,
   deleteHostelController,
 } from './hostel.controller';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../cloudinary/cloudinary';
 
-// Create uploads folder if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads/hostels');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: (req, file) => ({
+        folder: 'hostels',
+        allowed_foramts: ['jpg', 'png', 'jpeg'],
+    }),
 });
+
 const upload = multer({ storage });
 
 const hostel = (app: Express) => {

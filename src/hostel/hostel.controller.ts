@@ -9,10 +9,10 @@ export const createHostelController = async(req: MulterRequest, res: Response) =
     try {
         const hostel = req.body;
 
-        const imagePath = req.file?.path || req.body.image_URL;
+        const imageUrl = req.file?.path || req.body.image_URL;
         const newHostelData = {
             ...hostel,
-            ...(imagePath && {image: imagePath})
+            ...(imageUrl && {image_url: imageUrl})
         };
         const newHostel = await createHostelService(newHostelData);
         if (newHostel) {
@@ -67,11 +67,11 @@ export const updateHostelController = async (req: Request, res: Response) => {
             return res.status(400).json({error: "Invalid hostel ID"});
         }
         const hostel = req.body;
-        const imagePath = (req as any).file?.path;
-        console.log(imagePath);
+        const imageUrl = req.file?.path;
+        console.log(imageUrl);
         const updatedData = {
             ...hostel,
-            ...(imagePath && {image: imagePath})
+            ...(imageUrl && {image_url: imageUrl})
         }
         console.log("UPDATED DATA:", updatedData);
         await updateHostelService(hostelId, updatedData);
