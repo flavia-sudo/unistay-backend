@@ -9,7 +9,7 @@ export const createHostelController = async(req: MulterRequest, res: Response) =
     try {
         const hostel = req.body;
 
-        const imagePath = req.file?.path;
+        const imagePath = req.file?.path || req.body.image_URL;
         const newHostelData = {
             ...hostel,
             ...(imagePath && {image: imagePath})
