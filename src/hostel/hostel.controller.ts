@@ -59,6 +59,9 @@ export const getHostelByIdController = async (req: Request, res: Response) => {
 
 export const updateHostelController = async (req: Request, res: Response) => {
     try {
+        console.log("PARAMS:", req.params);
+        console.log("BODY:", req.body);
+        console.log("FILE:", (req as any).file);
         const hostelId = parseInt(req.params.hostelId as string);
         if (isNaN(hostelId)) {
             return res.status(400).json({error: "Invalid hostel ID"});
@@ -70,11 +73,13 @@ export const updateHostelController = async (req: Request, res: Response) => {
             ...hostel,
             ...(imagePath && {image: imagePath})
         }
+        console.log("UPDATED DATA:", updatedData);
         await updateHostelService(hostelId, updatedData);
         res.status(200).json({
                 message: "Hostel updated successfully",
             });
         } catch (error: any) {
+        console.log("UPDATE ERROR:", error);
         return res.status(500).json({error: error.message})
     }
 }
