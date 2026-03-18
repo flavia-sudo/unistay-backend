@@ -1,9 +1,19 @@
 import { Request, Response } from "express";
 import { createHostelService, getHostelsService, getHostelByIdService, getHostelByUserIdService,deleteHostelService,updateHostelService } from "./hostel.service";
 
-export const createHostelController = async(req: Request, res: Response) => {
+interface MulterRequest extends Request {
+    file?: Express.Multer.File;
+}
+
+export const createHostelController = async(req: MulterRequest, res: Response) => {
     try {
         const hostel = req.body;
+
+        const imagePath = req.file?.path;
+        const newHostelData = {
+            ...hostel,
+            image: imagePath
+        };
         const newHostel = await createHostelService(hostel);
         if (newHostel) {
             res.status(201).json({
@@ -54,6 +64,11 @@ export const updateHostelController = async (req: Request, res: Response) => {
             return res.status(400).json({error: "Invalid hostel ID"});
         }
         const hostel = req.body;
+        const imagePath = req.file?.path;
+        const updatedData = {
+            ...hostel,
+            ...(imagePath && {image: imagePath})
+        }
         await updateHostelService(hostelId, hostel);
         res.status(200).json({
                 message: "Hostel updated successfully",

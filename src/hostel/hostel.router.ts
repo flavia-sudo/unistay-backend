@@ -1,8 +1,17 @@
 import { Express, Response, Request, NextFunction } from 'express';
 import { createHostelController, deleteHostelController, getHostelByIdController, getHostelsController, getHostelByUserIdController, updateHostelController } from './hostel.controller';
+import multer from 'multer';
+
+const storage = multer.diskStorage({
+    destination: 'uploads/hostels/',
+    filename: (req, file, cb) => {cb(null, Date.now() + '-' + file.originalname)}
+});
+
+const upload = multer({storage});
 
 const hostel = (app: Express) => {
     app.route('/hostel').post(
+        upload.single('image'),
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 await createHostelController(req, res)
@@ -33,6 +42,7 @@ const hostel = (app: Express) => {
     )
 
     app.route('/hostel/:hostelId').put(
+        upload.single('image'),
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 await updateHostelController(req, res)
