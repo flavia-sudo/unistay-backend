@@ -29,7 +29,7 @@ const hostel = (app: Express) => {
 
   app.post(
     '/hostel',
-    upload.single('image'), // form-data key must be 'image'
+    upload.any(), // form-data key must be 'image'
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         await createHostelController(req as any, res);
@@ -63,7 +63,7 @@ const hostel = (app: Express) => {
 
   app.put(
     '/hostel/:hostelId',
-    upload.single('image'), // optional image
+    upload.any(), // optional image
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         await updateHostelController(req as any, res);
