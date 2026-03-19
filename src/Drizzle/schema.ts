@@ -38,6 +38,7 @@ export const HostelTable = pgTable("hostel", {
     contact_number: varchar("contact_number", { length: 20 }).notNull(),
     description: text("description").notNull(),
     image_URL: varchar("image_url", { length: 255 }).default("https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"),
+    price: integer("price").notNull(),
 })
 
 export const RoomTable = pgTable("room", {

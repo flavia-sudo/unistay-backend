@@ -27,7 +27,7 @@ const hostel = (app: Express) => {
 
   app.post(
     '/hostel',
-    upload.any(), // form-data key must be 'image'
+    upload.any(),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         await createHostelController(req as any, res);
