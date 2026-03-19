@@ -23,32 +23,28 @@ if (!process.env.CLOUDINARY_API_KEY) {
 async function migrateImages() {
   const hostels = await db.select().from(HostelTable);
 
-  // Path to your local default image
-  const defaultImagePath = path.join(__dirname, "../../assets/images/default_hostel.jpg");
-  if (!fs.existsSync(defaultImagePath)) {
-    console.error("Default image not found at:", defaultImagePath);
-    process.exit(1);
-  }
-
   for (const hostel of hostels) {
-    let localPath: string;
+    let fileName = hostel.image_URL;
 
-    // If placeholder or empty, use local default image
-    if (!hostel.image_URL || hostel.image_URL.includes("00000000000000000000000000000000")) {
-      console.log(`Placeholder detected for hostel ${hostel.hostelId}, using default image`);
-      localPath = defaultImagePath;
-    } else {
-      const fileName = path.basename(hostel.image_URL);
-      localPath = path.join(__dirname, "../../assets/images", fileName);
+    if (!fileName) continue;
 
-      if (!fs.existsSync(localPath)) {
-        console.log(`File not found: ${localPath}, using default image`);
-        localPath = defaultImagePath;
-      }
+    // Skip default placeholder images
+    if (fileName.includes("00000000000000000000000000000000")) {
+      console.log(`Skipping hostel ${hostel.hostelId}, placeholder image`);
+      continue;
+    }
+
+    // Get only the filename
+    fileName = path.basename(fileName);
+    const absolutePath = path.join(__dirname, "../../assets/images", fileName);
+
+    if (!fs.existsSync(absolutePath)) {
+      console.log(`File not found: ${absolutePath}`);
+      continue;
     }
 
     try {
-      const result = await cloudinary.uploader.upload(localPath, {
+      const result = await cloudinary.uploader.upload(absolutePath, {
         folder: "hostels",
         use_filename: true,
         unique_filename: false,
