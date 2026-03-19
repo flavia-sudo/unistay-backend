@@ -4,6 +4,9 @@ import path from "path";
 import  db from "../Drizzle/db";
 import { HostelTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 async function migrateImages() {
   const hostels = await db.select().from(HostelTable);
@@ -11,13 +14,7 @@ async function migrateImages() {
   for (const hostel of hostels) {
     let fileName = hostel.image_URL;
     if (!fileName) continue;
-
-    if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
-        console.log(`Skipping remote image for hostel ${hostel.hostelId}: ${fileName}`);
-        continue;
-    }
-
-    fileName = fileName.replace("assets/images/", "");
+    fileName = path.basename(fileName);
 
     const absolutePath = path.join(__dirname, "../../assets/images", fileName);
 
@@ -28,7 +25,7 @@ async function migrateImages() {
 
     try {
     const result = await cloudinary.uploader.upload(absolutePath, {
-      folder: "hostel", // Cloudinary folder
+      folder: "hostels", // Cloudinary folder
     });
 
     console.log(`Uploaded hostel ${hostel.hostelId}: ${result.secure_url}`);
