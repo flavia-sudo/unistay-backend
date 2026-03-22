@@ -1,5 +1,6 @@
 import db from "../Drizzle/db";
 import { ReviewTable, TIReview } from "../Drizzle/schema";
+import { HostelTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
 
 export const createReviewService = async (review: TIReview) => {
@@ -11,8 +12,29 @@ export const createReviewService = async (review: TIReview) => {
 }
 
 export const getReviewsService = async () => {
-    const reviews = await db.query.ReviewTable.findMany();
-    return reviews;
+    const reviews = await db.query.ReviewTable.findMany({
+        columns: {
+            reviewId: true,
+            rating: true,
+            comment: true,
+            createdAt: true,
+            hostelId: true,
+        }
+    });
+
+    const reviewsWithHostel = await Promise.all(
+        reviews.map(async (review) => {
+            const hostel = await db.query.HostelTable.findFirst({
+                columns: {hostelName: true},
+                where: eq(HostelTable.hostelId, review.hostelId),
+            });
+            return {
+                ...review,
+                hostelName: hostel?.hostelName ?? "Unknown Hostel",
+            };
+        })
+    );
+    return reviewsWithHostel;
 }
 
 export const  getReviewByIdService = async (Id: number) => {
