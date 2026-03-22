@@ -1,6 +1,7 @@
 import db from "../Drizzle/db";
-import { HostelTable, TIHostel } from "../Drizzle/schema";
+import { HostelTable, TIHostel, UserTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
+import hostel from "./hostel.router";
 
 export const createHostelService = async (hostel: TIHostel) => {
     const [ inserted ] = await db.insert(HostelTable).values(hostel).returning();
@@ -11,7 +12,22 @@ export const createHostelService = async (hostel: TIHostel) => {
 }
 
 export const getHostelsService = async () => {
-    const hostels = await db.query.HostelTable.findMany();
+    const hostels = await db
+    .select({
+        hostelId: HostelTable.hostelId,
+        userId: HostelTable.userId,
+        hostelName: HostelTable.hostelName,
+        location: HostelTable.location,
+        contact_number: HostelTable.contact_number,
+        description: HostelTable.description,
+        image_URL: HostelTable.image_URL,
+        price: HostelTable.price,
+
+        firstName: UserTable.firstName,
+        lastName: UserTable.lastName,
+    })
+    .from(HostelTable)
+    .leftJoin(UserTable, eq(HostelTable.userId, UserTable.userId));
     return hostels;
 }
 
