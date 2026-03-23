@@ -22,7 +22,7 @@ export const createUserController = async (req: Request, res: Response) => {
 export const getUsersController = async (req: Request, res: Response) => {
     try {
         const users = await getUsersService();
-        res.status(200).json(users);
+        res.status(200).json({data: users});
     }catch (error: any) {
         return res.status(500).json({ error: error.message });
     }
@@ -93,7 +93,7 @@ export const deleteUserController = async (req: Request, res: Response) => {
 export const getLandlordController = async (req: Request, res: Response) => {
     try {
         const landlords = await getLandlordService();
-        res.status(200).json(landlords);
+        res.status(200).json({data: landlords});
     }catch (error: any) {
         return res.status(500).json({ error: error.message });
     }
