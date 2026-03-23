@@ -11,8 +11,44 @@ export const createBookingService = async (booking: TIBooking) => {
 }
 
 export const getBookingService = async () => {
-    const bookings = await db.query.BookingTable.findMany();
-    return bookings;
+    const bookings = await db.query.BookingTable.findMany({
+        columns: {
+            bookingId: true,
+            checkInDate: true,
+            createdAt: true,
+            totalAmount: true,
+            bookingStatus: true,
+            roomId: true,
+            userId: true,
+        },
+        with: {
+            user: {
+                columns: {
+                    firstName: true,
+                    lastName: true,
+                },
+            },
+            room: {
+                columns: {
+                    roomNumber: true,
+                    hostelId: true,
+                },
+            },
+            hostel: {
+                columns: {
+                    hostelName: true,
+                },
+            },
+            
+        }
+    });
+    return bookings.map((b) =>({
+        ...b,
+        firstName: b.user?.firstName,
+        lastName: b.user?.lastName,
+        roomNumber: b.room?.roomNumber,
+        hostelName: b.hostel?.hostelName
+    }));
 }
 
 export const getBookingByIdService = async (Id: number) => {
