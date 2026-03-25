@@ -1,4 +1,4 @@
-import { createPaymentService, deletePaymentService, getPaymentByIdService, getPaymentService, getPaymentByBookingIdService, updatePaymentService } from "./payment.service";
+import { createPaymentService, deletePaymentService, getPaymentByIdService, getPaymentService, getPaymentByBookingIdService, updatePaymentService, getPaymentByUserIdService } from "./payment.service";
 import { Request, Response } from "express";
 
 export const createPaymentController = async (req: Request, res: Response) => {
@@ -100,6 +100,23 @@ export const getPaymentByBookingIdController = async (req: Request, res: Respons
         }
         const payment = await getPaymentByBookingIdService(bookingId);
         res.status(200).json(payment);
+    } catch (error: any) {
+        return res.status(500).json({error: error.message})
+    }
+}
+
+export const getPaymentByUserIdController = async (req: Request, res: Response) => {
+    try {
+        const userId = parseInt(req.params.userId as string);
+        if (isNaN(userId)) {
+            return res.status(400).json({error: "Invalid user id"});
+        }
+        const payment = await getPaymentByUserIdService(userId);
+        if (payment) {
+            res.status(200).json(payment);
+        } else {
+            res.status(404).json({error: "Payment not found"});
+        }
     } catch (error: any) {
         return res.status(500).json({error: error.message})
     }

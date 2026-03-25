@@ -1,5 +1,7 @@
 import { Express, Response, Request, NextFunction } from 'express';
-import { createPaymentController, deletePaymentController, getPaymentByIdController, getPaymentController, getPaymentByBookingIdController, updatePaymentController } from './payment.controller';
+import { createPaymentController, deletePaymentController, getPaymentByIdController, getPaymentController, getPaymentByBookingIdController, updatePaymentController,
+    getPaymentByUserIdController
+ } from './payment.controller';
 import { isAdmin, isAuthenticated } from '../middleware/auth.middleware';
 
 const payment = (app: Express) => {
@@ -60,6 +62,16 @@ const payment = (app: Express) => {
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 await getPaymentByBookingIdController(req, res)
+            } catch (error) {
+                next (error)
+            }
+        }
+    )
+
+    app.route('/payment/user/:userId').get(
+        async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                await getPaymentByUserIdController(req, res)
             } catch (error) {
                 next (error)
             }

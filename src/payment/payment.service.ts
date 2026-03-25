@@ -141,3 +141,8 @@ export const deletePaymentService = async (paymentId: number) => {
   const [deleted] = await db.delete(PaymentTable).where(eq(PaymentTable.paymentId, paymentId)).returning();
   return deleted ?? null;
 };
+
+export const getPaymentByUserIdService = async (userId: number) => {
+  const payment = await db.query.PaymentTable.findMany({where: eq(PaymentTable.userId, userId)});
+  return payment;
+};
