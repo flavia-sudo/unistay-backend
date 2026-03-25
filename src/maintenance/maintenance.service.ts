@@ -1,5 +1,5 @@
 import db from "../Drizzle/db";
-import { MaintenanceTable, TIMaintenance } from "../Drizzle/schema";
+import { MaintenanceTable, TIMaintenance, UserTable, RoomTable, HostelTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
 
 export const createMaintenanceService = async (maintenance: TIMaintenance) => {
@@ -11,21 +11,28 @@ export const createMaintenanceService = async (maintenance: TIMaintenance) => {
 }
 
 export const getMaintenanceService = async () => {
-    const maintenanceAll = await db.query.MaintenanceTable.findMany({
-        with: {
-            user: true,
-            hostel: true,
-            room: true
-        }
-    });
-    return maintenanceAll.map((m) => ({
-        ...m,
-        firstName: m.user?.[0].firstName,
-        lastName: m.user?.[0].lastName,
-        hostelName: m.hostel?.[0].hostelName,
-        roomNumber: m.room?.[0].roomNumber
-    }));
-}
+  const maintenanceAll = await db
+    .select({
+      maintenanceId: MaintenanceTable.maintenanceId,
+      issueTitle: MaintenanceTable.issueTitle,
+      description: MaintenanceTable.description,
+      status: MaintenanceTable.status,
+      date_reported: MaintenanceTable.date_reported,
+      date_resolved: MaintenanceTable.date_resolved,
+
+      // Join fields
+      firstName: UserTable.firstName,
+      lastName: UserTable.lastName,
+      hostelName: HostelTable.hostelName,
+      roomNumber: RoomTable.roomNumber,
+    })
+    .from(MaintenanceTable)
+    .leftJoin(UserTable, eq(MaintenanceTable.userId, UserTable.userId))
+    .leftJoin(RoomTable, eq(MaintenanceTable.roomId, RoomTable.roomId))
+    .leftJoin(HostelTable, eq(MaintenanceTable.hostelId, HostelTable.hostelId));
+
+  return maintenanceAll;
+};
 
 export const getMaintenanceByIdService = async (Id: number) => {
     const maintenance = await db.query.MaintenanceTable.findFirst({

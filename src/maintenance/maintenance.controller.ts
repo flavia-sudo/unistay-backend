@@ -31,9 +31,11 @@ export const getMaintenanceController = async (req: Request, res: Response) => {
     try {
         const maintenanceAll = await getMaintenanceService();
         res.status(200).json({
-            message: "Maintenances fetched successfully",
-            data: maintenanceAll});
+            message: "Maintenance fetched successfully",
+            data: maintenanceAll
+        });
     } catch (error: any) {
+        console.log(error);
         return res.status(500).json({error: error.message})
     }
 }
