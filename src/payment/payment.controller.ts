@@ -29,7 +29,9 @@ export const createPaymentController = async (req: Request, res: Response) => {
 export const getPaymentController = async (req: Request, res: Response) => {
     try {
         const payments = await getPaymentService();
-        res.status(200).json(payments);
+        res.status(200).json({
+            data: payments
+        });
     } catch (error: any) {
         return res.status(500).json({error: error.message})
     }
