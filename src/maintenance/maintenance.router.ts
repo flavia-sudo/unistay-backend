@@ -1,5 +1,5 @@
 import { Express, Response, Request, NextFunction } from 'express';
-import { createMaintenanceController, deleteMaintenanceController, getMaintenanceByIdController, getMaintenanceController, getMaintenanceByRoomIdController, updateMaintenanceController } from './maintenance.controller';
+import { createMaintenanceController, deleteMaintenanceController, getMaintenanceByIdController, getMaintenanceController, getMaintenanceByRoomIdController, updateMaintenanceController, getMaintenanceByUserIdController } from './maintenance.controller';
 
 const maintenance = (app: Express) => {
     app.route('/maintenance').post(
@@ -56,6 +56,16 @@ const maintenance = (app: Express) => {
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 await getMaintenanceByRoomIdController(req, res)
+            } catch (error) {
+                next (error)
+            }
+        }
+    )
+
+    app.route('/maintenance/user/:userId').get(
+        async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                await getMaintenanceByUserIdController(req, res)
             } catch (error) {
                 next (error)
             }

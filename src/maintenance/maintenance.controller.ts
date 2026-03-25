@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createMaintenanceService, getMaintenanceService, getMaintenanceByIdService, getMaintenanceByRoomIdService, deleteMaintenanceService, updateMaintenanceService } from "./maintenance.service";
+import { createMaintenanceService, getMaintenanceService, getMaintenanceByIdService, getMaintenanceByRoomIdService, deleteMaintenanceService, updateMaintenanceService, getMaintenanceByUserIdService } from "./maintenance.service";
 
 export const createMaintenanceController = async(req: Request, res: Response) => {
     try {
@@ -108,6 +108,20 @@ export const getMaintenanceByRoomIdController = async (req: Request, res: Respon
             return res.status(400).json({error: "Invalid room ID"});
         }
         const maintenance = await getMaintenanceByRoomIdService(roomId);
+        res.status(200).json(maintenance);
+    } catch (error: any) {
+        console.log(error);
+        return res.status(500).json({error: error.message})
+    }
+}
+
+export const getMaintenanceByUserIdController = async (req: Request, res: Response) => {
+    try {
+        const userId = parseInt(req.params.userId as string);
+        if (isNaN(userId)) {
+            return res.status(400).json({error: "Invalid user ID"});
+        }
+        const maintenance = await getMaintenanceByUserIdService(userId);
         res.status(200).json(maintenance);
     } catch (error: any) {
         console.log(error);

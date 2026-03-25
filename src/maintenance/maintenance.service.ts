@@ -57,3 +57,10 @@ export const getMaintenanceByRoomIdService = async (roomId: number) => {
     });
     return maintenance;
 }
+
+export const getMaintenanceByUserIdService = async (userId: number) => {
+    const maintenance = await db.query.MaintenanceTable.findFirst({
+        where: eq(MaintenanceTable.userId, userId)
+    });
+    return maintenance;
+}
