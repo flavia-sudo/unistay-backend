@@ -1,124 +1,143 @@
-import { eq } from "drizzle-orm";
 import db from "../Drizzle/db";
-import { PaymentTable } from "../Drizzle/schema";
+import { PaymentTable, TIPayment, BookingTable, UserTable, RoomTable, HostelTable } from "../Drizzle/schema";
+import { eq } from "drizzle-orm";
 
-/* ---------------- CREATE ---------------- */
-export const createPaymentService = async (payment: any) => {
-  const [inserted] = await db
-    .insert(PaymentTable)
-    .values(payment)
-    .returning();
-
+export const createPaymentService = async (payment: TIPayment) => {
+  const [inserted] = await db.insert(PaymentTable).values(payment).returning();
   return inserted ?? null;
 };
 
-/* ---------------- GET ALL (WITH RELATIONS) ---------------- */
 export const getPaymentService = async () => {
-  const payments = await db.query.PaymentTable.findMany({
-    with: {
-      booking: {
-        with: {
-          user: true,
-          room: {
-            with: {
-              hostel: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  const payments = await db.query.PaymentTable.findMany();
 
-  // Flatten response for frontend
-  return payments.map((p) => ({
-    ...p,
-    firstName: p.booking?.user?.firstName ?? null,
-    lastName: p.booking?.user?.lastName ?? null,
-    hostelName: p.booking?.room?.hostel?.hostelName ?? null,
-    roomNumber: p.booking?.room?.roomNumber ?? null,
-  }));
+  const paymentsWithRelations = await Promise.all(
+    payments.map(async (p) => {
+      const booking = await db.query.BookingTable.findFirst({
+        where: eq(BookingTable.bookingId, p.bookingId),
+      });
+
+      const user = booking
+        ? await db.query.UserTable.findFirst({
+            columns: { firstName: true, lastName: true },
+            where: eq(UserTable.userId, booking.userId),
+          })
+        : null;
+
+      const room = booking
+        ? await db.query.RoomTable.findFirst({
+            columns: { roomNumber: true, hostelId: true },
+            where: eq(RoomTable.roomId, booking.roomId),
+          })
+        : null;
+
+      const hostel = room
+        ? await db.query.HostelTable.findFirst({
+            columns: { hostelName: true },
+            where: eq(HostelTable.hostelId, room.hostelId),
+          })
+        : null;
+
+      return {
+        ...p,
+        firstName: user?.firstName ?? null,
+        lastName: user?.lastName ?? null,
+        roomNumber: room?.roomNumber ?? null,
+        hostelName: hostel?.hostelName ?? null,
+      };
+    })
+  );
+
+  return paymentsWithRelations;
 };
 
-/* ---------------- GET BY ID ---------------- */
 export const getPaymentByIdService = async (paymentId: number) => {
   const payment = await db.query.PaymentTable.findFirst({
     where: eq(PaymentTable.paymentId, paymentId),
-    with: {
-      booking: {
-        with: {
-          user: true,
-          room: {
-            with: {
-              hostel: true,
-            },
-          },
-        },
-      },
-    },
   });
 
   if (!payment) return null;
 
+  const booking = await db.query.BookingTable.findFirst({
+    where: eq(BookingTable.bookingId, payment.bookingId),
+  });
+
+  const user = booking
+    ? await db.query.UserTable.findFirst({
+        columns: { firstName: true, lastName: true },
+        where: eq(UserTable.userId, booking.userId),
+      })
+    : null;
+
+  const room = booking
+    ? await db.query.RoomTable.findFirst({
+        columns: { roomNumber: true, hostelId: true },
+        where: eq(RoomTable.roomId, booking.roomId),
+      })
+    : null;
+
+  const hostel = room
+    ? await db.query.HostelTable.findFirst({
+        columns: { hostelName: true },
+        where: eq(HostelTable.hostelId, room.hostelId),
+      })
+    : null;
+
   return {
     ...payment,
-    firstName: payment.booking?.user?.firstName ?? null,
-    lastName: payment.booking?.user?.lastName ?? null,
-    hostelName: payment.booking?.room?.hostel?.hostelName ?? null,
-    roomNumber: payment.booking?.room?.roomNumber ?? null,
+    firstName: user?.firstName ?? null,
+    lastName: user?.lastName ?? null,
+    roomNumber: room?.roomNumber ?? null,
+    hostelName: hostel?.hostelName ?? null,
   };
 };
 
-/* ---------------- UPDATE ---------------- */
-export const updatePaymentService = async (
-  paymentId: number,
-  payment: any
-) => {
-  const [updated] = await db
-    .update(PaymentTable)
-    .set(payment)
-    .where(eq(PaymentTable.paymentId, paymentId))
-    .returning();
+export const getPaymentByBookingIdService = async (bookingId: number) => {
+  const payment = await db.query.PaymentTable.findFirst({
+    where: eq(PaymentTable.bookingId, bookingId),
+  });
 
+  if (!payment) return null;
+
+  const booking = await db.query.BookingTable.findFirst({
+    where: eq(BookingTable.bookingId, bookingId),
+  });
+
+  const user = booking
+    ? await db.query.UserTable.findFirst({
+        columns: { firstName: true, lastName: true },
+        where: eq(UserTable.userId, booking.userId),
+      })
+    : null;
+
+  const room = booking
+    ? await db.query.RoomTable.findFirst({
+        columns: { roomNumber: true, hostelId: true },
+        where: eq(RoomTable.roomId, booking.roomId),
+      })
+    : null;
+
+  const hostel = room
+    ? await db.query.HostelTable.findFirst({
+        columns: { hostelName: true },
+        where: eq(HostelTable.hostelId, room.hostelId),
+      })
+    : null;
+
+  return {
+    ...payment,
+    firstName: user?.firstName ?? null,
+    lastName: user?.lastName ?? null,
+    roomNumber: room?.roomNumber ?? null,
+    hostelName: hostel?.hostelName ?? null,
+  };
+};
+
+export const updatePaymentService = async (paymentId: number, payment: TIPayment) => {
+  const [updated] = await db.update(PaymentTable).set(payment).where(eq(PaymentTable.paymentId, paymentId)).returning();
   return updated ?? null;
 };
 
-/* ---------------- DELETE ---------------- */
 export const deletePaymentService = async (paymentId: number) => {
-  const [deleted] = await db
-    .delete(PaymentTable)
-    .where(eq(PaymentTable.paymentId, paymentId))
-    .returning();
-
+  const [deleted] = await db.delete(PaymentTable).where(eq(PaymentTable.paymentId, paymentId)).returning();
   return deleted ?? null;
-};
-
-/* ---------------- GET BY BOOKING ID ---------------- */
-export const getPaymentByBookingIdService = async (
-  bookingId: number
-) => {
-  const payment = await db.query.PaymentTable.findFirst({
-    where: eq(PaymentTable.bookingId, bookingId),
-    with: {
-      booking: {
-        with: {
-          user: true,
-          room: {
-            with: {
-              hostel: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!payment) return null;
-
-  return {
-    ...payment,
-    firstName: payment.booking?.user?.firstName ?? null,
-    lastName: payment.booking?.user?.lastName ?? null,
-    hostelName: payment.booking?.room?.hostel?.hostelName ?? null,
-    roomNumber: payment.booking?.room?.roomNumber ?? null,
-  };
 };
