@@ -30,7 +30,9 @@ export const createBookingController = async(req: Request, res: Response) => {
 export const getBookingController = async (req: Request, res: Response) => {
     try {
         const bookings = await getBookingService();
-        res.status(200).json(bookings);
+        res.status(200).json({
+            message: "Bookings fetched successfully",
+            data: bookings});
     } catch (error: any) {
         return res.status(500).json({error: error.message})
     }
