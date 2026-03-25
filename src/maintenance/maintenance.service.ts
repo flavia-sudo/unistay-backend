@@ -11,8 +11,20 @@ export const createMaintenanceService = async (maintenance: TIMaintenance) => {
 }
 
 export const getMaintenanceService = async () => {
-    const maintenanceAll = await db.query.MaintenanceTable.findMany();
-    return maintenanceAll;
+    const maintenanceAll = await db.query.MaintenanceTable.findMany({
+        with: {
+            user: true,
+            hostel: true,
+            room: true
+        }
+    });
+    return maintenanceAll.map((m) => ({
+        ...m,
+        firstName: m.user?.[0].firstName,
+        lastName: m.user?.[0].lastName,
+        hostelName: m.hostel?.[0].hostelName,
+        roomNumber: m.room?.[0].roomNumber
+    }));
 }
 
 export const getMaintenanceByIdService = async (Id: number) => {

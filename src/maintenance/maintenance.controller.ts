@@ -30,7 +30,9 @@ export const createMaintenanceController = async(req: Request, res: Response) =>
 export const getMaintenanceController = async (req: Request, res: Response) => {
     try {
         const maintenanceAll = await getMaintenanceService();
-        res.status(200).json(maintenanceAll);
+        res.status(200).json({
+            message: "Maintenances fetched successfully",
+            data: maintenanceAll});
     } catch (error: any) {
         return res.status(500).json({error: error.message})
     }
@@ -44,7 +46,9 @@ export const getMaintenanceByIdController = async (req: Request, res: Response) 
         }
         const maintenance = await getMaintenanceByIdService(maintenanceId);
         if (maintenance) {
-                res.status(200).json(maintenance);
+                res.status(200).json({
+                    data: maintenance
+                });
             }else {
                 res.status(404).json({error: "Maintenance not found"});
             }
@@ -62,8 +66,6 @@ export const updateMaintenanceController = async (req: Request, res: Response) =
         const maintenance = req.body;
         const payload = {
             ...maintenance,
-            date_reported: new Date(),
-            date_resolved: new Date()
         }
         console.log(payload)
         const updatedMaintenance = await updateMaintenanceService(maintenanceId, payload);
