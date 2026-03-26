@@ -62,8 +62,8 @@ export const getReviewByHostelIdService =async (hostelId: number) => {
 }
 
 export const getReviewByUserIdService =async (userId: number) => {
-    const review = await db.query.ReviewTable.findFirst({
+    const reviews = await db.query.ReviewTable.findMany({
         where: eq(ReviewTable.userId, userId)
     });
-    return review;
+    return {data: reviews};
 }
