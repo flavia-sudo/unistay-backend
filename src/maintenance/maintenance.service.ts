@@ -59,8 +59,8 @@ export const getMaintenanceByRoomIdService = async (roomId: number) => {
 }
 
 export const getMaintenanceByUserIdService = async (userId: number) => {
-    const maintenance = await db.query.MaintenanceTable.findFirst({
+    const maintenance = await db.query.MaintenanceTable.findMany({
         where: eq(MaintenanceTable.userId, userId)
     });
-    return maintenance;
+    return { data: maintenance };
 }

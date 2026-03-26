@@ -116,7 +116,7 @@ export const getBookingByUserIdService = async (userId: number) => {
     })
   );
 
-  return bookingsWithRelations;
+  return { data: bookingsWithRelations };
 };
 
 /* ---------------- GET BY ROOM ID ---------------- */
