@@ -3,13 +3,7 @@ import { createMaintenanceService, getMaintenanceService, getMaintenanceByIdServ
 
 export const createMaintenanceController = async(req: Request, res: Response) => {
     try {
-        const maintenance = req.body;
-        if (maintenance.date_reported) {
-            maintenance.date_reported = new Date(maintenance.date_reported);
-        }
-        if (maintenance.date_resolved) {
-            maintenance.date_resolved = new Date(maintenance.date_resolved);
-        }
+        const { date_reported, date_resolved, ...maintenance } = req.body;
         const newMaintenance = await createMaintenanceService(maintenance);
         if (newMaintenance) {
             res.status(201).json({
