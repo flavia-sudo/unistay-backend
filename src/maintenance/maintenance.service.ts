@@ -60,7 +60,25 @@ export const getMaintenanceByRoomIdService = async (roomId: number) => {
 
 export const getMaintenanceByUserIdService = async (userId: number) => {
     const maintenance = await db.query.MaintenanceTable.findMany({
-        where: eq(MaintenanceTable.userId, userId)
+        where: eq(MaintenanceTable.userId, userId),
+        with: {
+            hostel : {
+                columns : {
+                    hostelName : true,
+                }
+            },
+            room : {
+                columns : {
+                    roomNumber : true,
+                }
+            }
+        }
     });
-    return { data: maintenance };
+
+    const data = maintenance.map((m) => ({
+        ...m,
+        hostelName: m.hostel?.[0]?.hostelName ?? "Unknown",
+        roomNumber: m.room?.[0]?.roomNumber ?? "Unknown",
+    }))
+    return { data};
 }

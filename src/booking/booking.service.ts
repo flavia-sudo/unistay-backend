@@ -108,6 +108,11 @@ export const getBookingByUserIdService = async (userId: number) => {
           })
         : null;
 
+        const user = await db.query.UserTable.findFirst({
+          columns: { firstName: true, lastName: true },
+          where: eq(UserTable.userId, b.userId),
+        });
+
       return {
         ...b,
         roomNumber: room?.roomNumber,
