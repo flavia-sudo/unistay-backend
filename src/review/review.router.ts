@@ -1,5 +1,5 @@
 import { Express, Response, Request, NextFunction } from 'express';
-import { createReviewController, deleteReviewController, getReviewByIdController, getReviewByHostelIdController, getReviewsController, updateReviewController } from './review.controller';
+import { createReviewController, deleteReviewController, getReviewByIdController, getReviewByHostelIdController, getReviewByUserIdController, getReviewsController, updateReviewController } from './review.controller';
 
 const review = (app: Express) => {
     app.route('/review').post(
@@ -56,6 +56,16 @@ const review = (app: Express) => {
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 await getReviewByHostelIdController(req, res)
+            } catch (error) {
+                next (error)
+            }
+        }
+    )
+
+    app.route('/review/user/:userId').get(
+        async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                await getReviewByUserIdController(req, res)
             } catch (error) {
                 next (error)
             }

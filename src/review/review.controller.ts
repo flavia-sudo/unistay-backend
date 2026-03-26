@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createReviewService, getReviewByIdService, getReviewsService, getReviewByHostelIdService, deleteReviewService, updateReviewService} from "./review.service";
+import { createReviewService, getReviewByIdService, getReviewsService, getReviewByHostelIdService, deleteReviewService, updateReviewService, getReviewByUserIdService } from "./review.service";
 
 export const createReviewController = async(req: Request, res: Response) => {
     try {
@@ -105,6 +105,19 @@ export const getReviewByHostelIdController = async (req: Request, res: Response)
             return res.status(400).json({error: "Invalid hostel ID"});
         }
         const review = await getReviewByHostelIdService(hostelId);
+        res.status(200).json(review);
+    } catch (error: any) {
+        return res.status(500).json({error: error.mesaage})
+    }
+}
+
+export const getReviewByUserIdController = async (req: Request, res: Response) => {
+    try {
+        const userId = parseInt(req.params.userId as string);
+        if (isNaN(userId)) {
+            return res.status(400).json({error: "Invalid user ID"});
+        }
+        const review = await getReviewByUserIdService(userId);
         res.status(200).json(review);
     } catch (error: any) {
         return res.status(500).json({error: error.mesaage})

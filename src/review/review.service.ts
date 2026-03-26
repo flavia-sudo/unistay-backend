@@ -60,3 +60,10 @@ export const getReviewByHostelIdService =async (hostelId: number) => {
     });
     return review;
 }
+
+export const getReviewByUserIdService =async (userId: number) => {
+    const review = await db.query.ReviewTable.findFirst({
+        where: eq(ReviewTable.userId, userId)
+    });
+    return review;
+}
