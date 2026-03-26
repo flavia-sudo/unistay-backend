@@ -77,8 +77,8 @@ export const getMaintenanceByUserIdService = async (userId: number) => {
 
     const data = maintenance.map((m) => ({
         ...m,
-        hostelName: m.hostel?.[0]?.hostelName ?? "Unknown",
-        roomNumber: m.room?.[0]?.roomNumber ?? "Unknown",
+        hostelName: m.hostel?.hostelName ?? "Unknown",
+        roomNumber: m.room?.roomNumber ?? "Unknown",
     }))
     return { data};
 }
