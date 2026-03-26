@@ -113,11 +113,13 @@ export const getBookingByUserIdService = async (userId: number) => {
           where: eq(UserTable.userId, b.userId),
         });
 
-      return {
-        ...b,
-        roomNumber: room?.roomNumber,
-        hostelName: hostel?.hostelName,
-      };
+        return {
+          ...b,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          roomNumber: room?.roomNumber,
+          hostelName: hostel?.hostelName,
+        };
     })
   );
 
