@@ -137,20 +137,11 @@ export const BookingRelations = relations(BookingTable, ({ many, one }) => ({
 }))
 
 // Maintenance Table relations
-export const MaintenanceRelations = relations(MaintenanceTable, ({ one }) => ({
-    hostel: one(HostelTable, {
-        fields: [MaintenanceTable.hostelId],
-        references: [HostelTable.hostelId],
-    }),
-    room: one(RoomTable, {
-        fields: [MaintenanceTable.roomId],
-        references: [RoomTable.roomId],
-    }),
-    user: one(UserTable, {
-        fields: [MaintenanceTable.userId],
-        references: [UserTable.userId],
-    }),
-}));
+export const MaintenanceRelations = relations(MaintenanceTable, ({ many }) => ({
+    hostel: many(HostelTable),
+    room: many(RoomTable),
+    user: many(UserTable),
+}))
 
 // Payment Table relations
 export const PaymentRelations = relations(PaymentTable, ({ one }) => ({
