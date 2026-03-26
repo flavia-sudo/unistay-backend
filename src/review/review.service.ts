@@ -63,7 +63,18 @@ export const getReviewByHostelIdService =async (hostelId: number) => {
 
 export const getReviewByUserIdService =async (userId: number) => {
     const reviews = await db.query.ReviewTable.findMany({
-        where: eq(ReviewTable.userId, userId)
+        where: eq(ReviewTable.userId, userId),
+        with: {
+            hostel: {
+                columns: {
+                    hostelName: true
+                }
+            }
+        }
     });
-    return {data: reviews};
+    const data = reviews.map((review) => ({
+        ...review,
+        hostelName: review.hostel?.hostelName ?? "Unknown",
+    }));
+    return {data};
 }
