@@ -113,12 +113,12 @@ export const userLoginService = async (email: string, password: string) => {
         .then((rows) => rows[0]);
 
     if (!user) {
-        return new Error("Invalid email or password");
+        throw new Error("Invalid email or password");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-        return new Error("Invalid email or password");
+        throw new Error("Invalid email or password");
     }
 
     const token = jwt.sign(
