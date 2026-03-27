@@ -1,5 +1,5 @@
 import db from "../Drizzle/db";
-import { PaymentTable, TIPayment, BookingTable, UserTable, RoomTable, HostelTable } from "../Drizzle/schema";
+import { PaymentTable, TIPayment, TSPayment, BookingTable, UserTable, RoomTable, HostelTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
 
 export const createPaymentService = async (payment: TIPayment) => {
@@ -148,3 +148,15 @@ export const getPaymentByUserIdService = async (userId: number) => {
   });
   return { data: payment };
 };
+
+export const getByTransactionId = async (transactionId: string): Promise<TSPayment | undefined> => {
+  try {
+    const result = await db
+      .select()
+      .from(PaymentTable)
+      .where(eq(PaymentTable.transactionId, transactionId))
+    return result[0]
+  } catch (error: any) {
+    throw new Error(`Failed to fetch payment by transaction ID: ${error.message}`)
+  }
+}

@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { decimal } from "drizzle-orm/pg-core";
 import { integer } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
-import { pgTable, varchar, text, date, boolean, serial } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, date, boolean, serial, timestamp } from "drizzle-orm/pg-core";
 
 export const RoleEnum = pgEnum("role", ["student", "admin", "landlord"]);
 export const MaintenanceEnum = pgEnum("status", ["pending", "on progress", "resolved"]);
@@ -72,9 +72,10 @@ export const PaymentTable = pgTable("payment", {
     userId: integer("user_id").notNull().references(() => UserTable.userId, { onDelete: "cascade" }),
     amount: decimal("amount").notNull(),
     method: varchar("method", { length: 50 }).notNull(),
-    paymentStatus: boolean("payment_status").notNull().default(false),
-    createdAt: date("created_at").defaultNow(),
-    updatedAt: date("updated_at").defaultNow(),
+    transactionId: varchar("transaction_id", { length: 255 }).notNull(),
+    paymentStatus: varchar("payment_status").notNull().default("Pending"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
 })
 
 export const MaintenanceTable = pgTable("maintenance", {
