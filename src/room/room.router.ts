@@ -22,6 +22,16 @@ const room = (app: Express) => {
         }
     )
 
+    app.route('/room/hostel/:hostelId').get(
+        async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                await getRoomByHostelIdController(req, res)
+            } catch (error) {
+                next (error)
+            }
+        }
+    )
+
     app.route('/room/:roomId').get(
         async (req: Request, res: Response, next: NextFunction) => {
             try {
@@ -46,16 +56,6 @@ const room = (app: Express) => {
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 await deleteRoomController(req, res)
-            } catch (error) {
-                next (error)
-            }
-        }
-    )
-
-    app.route('/room/hostel/:hostelId').get(
-        async (req: Request, res: Response, next: NextFunction) => {
-            try {
-                await getRoomByHostelIdController(req, res)
             } catch (error) {
                 next (error)
             }

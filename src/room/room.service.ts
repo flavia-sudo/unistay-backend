@@ -34,7 +34,7 @@ export const deleteRoomService = async (Id: number) => {
 
 
 export const getRoomByHostelIdService = async (hostelId: number) => {
-    const rooms = await db.query.RoomTable.findFirst({
+    const rooms = await db.query.RoomTable.findMany({
         where: eq(RoomTable.hostelId, hostelId)
     });
     return rooms;
