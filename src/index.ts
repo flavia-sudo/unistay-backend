@@ -8,6 +8,7 @@ import hostel from "./hostel/hostel.router";
 import maintenance from "./maintenance/maintenance.router";
 import review from "./review/review.router";
 import cors from "cors";
+import mpesaRoutes from "./mpesa/mpesa.router";
 
 const initializeApp = () => {
     const app = express();
@@ -24,7 +25,7 @@ const initializeApp = () => {
     hostel(app);
     maintenance(app);
     review(app);
-
+    app.use('/api/mpesa', mpesaRoutes);
     app.get('/', (req, res) => {
         res.send('Welcome to hostel management API');
     })
