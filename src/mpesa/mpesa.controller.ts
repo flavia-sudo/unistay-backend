@@ -26,10 +26,17 @@ export const stkPushController: RequestHandler = async (req, res) => {
     })
 
     res.json({ success: true, data })
-  } catch (error) {
-    console.error("STK Push Error:", (error as Error).message)
-    res.status(500).json({ success: false, message: "STK push failed" })
-  }
+  } catch (error: any) {
+  console.error("❌ FULL STK ERROR:");
+  console.error("Message:", error.message);
+  console.error("Status:", error.response?.status);
+  console.error("Data:", error.response?.data);
+
+  res.status(500).json({
+    success: false,
+    message: error.response?.data?.errorMessage || error.message || "STK push failed",
+  });
+}
 }
 
 export const mpesaCallbackController: RequestHandler = async (req: Request, res: Response): Promise<void> => {
