@@ -63,8 +63,8 @@ export const BookingTable = pgTable("booking", {
     duration: text("duration").notNull().default("4 months"),
     totalAmount: decimal("total_amount").notNull(),
     bookingStatus: boolean("booking_status").notNull().default(false),
-    createdAt: date("created_at").defaultNow(),
-    updatedAt: date("updated_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
 })
 
 export const PaymentTable = pgTable("payment", {
