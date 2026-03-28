@@ -1,6 +1,6 @@
 import axios from "axios";
 import db from "../Drizzle/db";
-import { PaymentTable } from '../Drizzle/schema';
+import { PaymentTable, BookingTable } from '../Drizzle/schema';
 import { eq } from "drizzle-orm";
 import { getAccessToken, generatePassword } from "../utils/mpesa.helpers";
 import { normalizePhoneNumber } from "../utils/normalizePhoneNumbers";
@@ -18,15 +18,23 @@ export const initiateStkPush = async ({
   const token = await getAccessToken()
   const { password, timestamp } = generatePassword()
 
-  console.log("🚀 Initiating STK Push:", { 
-    paymentId, 
-    amount, 
+  // FIX 1: Always use sandbox URL when MPESA_ENV=sandbox.
+  // Previously, any value other than "sandbox" would hit the production URL,
+  // causing 404s when using sandbox credentials.
+  const mpesaBaseUrl = process.env.MPESA_ENV === "sandbox"
+    ? "https://sandbox.safaricom.co.ke"
+    : "https://api.safaricom.co.ke"
+
+  console.log("🚀 Initiating STK Push:", {
+    paymentId,
+    amount,
     normalizedPhone,
-    callbackUrl: `${process.env.MPESA_CALLBACK_URL}?payment_id=${paymentId}`
+    env: process.env.MPESA_ENV,
+    callbackUrl: `${process.env.MPESA_CALLBACK_URL}?payment_id=${paymentId}`,
   })
 
   const response = await axios.post(
-    `https://${process.env.MPESA_ENV === "sandbox" ? "sandbox" : "api"}.safaricom.co.ke/mpesa/stkpush/v1/processrequest`,
+    `${mpesaBaseUrl}/mpesa/stkpush/v1/processrequest`,
     {
       BusinessShortCode: process.env.MPESA_SHORTCODE,
       Password: password,
@@ -37,8 +45,8 @@ export const initiateStkPush = async ({
       PartyB: process.env.MPESA_SHORTCODE,
       PhoneNumber: normalizedPhone,
       CallBackURL: `${process.env.MPESA_CALLBACK_URL}?payment_id=${paymentId}`,
-      AccountReference: "EventBooking",
-      TransactionDesc: "Ticket Payment",
+      AccountReference: "HostelBooking",
+      TransactionDesc: "Hostel Room Payment",
     },
     {
       headers: {
@@ -49,105 +57,96 @@ export const initiateStkPush = async ({
 
   console.log("📱 STK Push response from Safaricom:", response.data)
 
-  // Checks for M-Pesa errors
   if (response.data.ResponseCode !== "0") {
     throw new Error(`M-Pesa Error: ${response.data.ResponseDescription}`)
   }
 
-  // Update payment record with CheckoutRequestID for tracking
+  // FIX 2: Store CheckoutRequestID in transactionId — NOT in paymentId.
+  // Previously this overwrote paymentId (a serial int PK) with a string,
+  // which would corrupt the record and break the callback lookup since
+  // the callback URL already carries ?payment_id=<numeric_id>.
   if (response.data.CheckoutRequestID) {
-    console.log("Updating payment record with CheckoutRequestID:", response.data.CheckoutRequestID)
-    
+    console.log("💾 Storing CheckoutRequestID in transactionId:", response.data.CheckoutRequestID)
+
     await db
       .update(PaymentTable)
       .set({
-        paymentId: response.data.CheckoutRequestID,
+        transactionId: response.data.CheckoutRequestID,  // ✅ correct column
         paymentStatus: "Processing",
         updatedAt: new Date(),
       })
-      .where(eq(PaymentTable.paymentId, paymentId))
+      .where(eq(PaymentTable.paymentId, paymentId))       // ✅ paymentId unchanged
 
-    console.log("Payment record updated to Processing status")
+    console.log("✅ Payment record updated to Processing status")
   }
 
   return response.data
 }
 
 export const handleMpesaCallback = async (paymentId: number, callbackBody: any) => {
-  console.log("M-Pesa Callback Handler Started")
+  console.log("📩 M-Pesa Callback Handler Started")
   console.log("Payment ID:", paymentId)
   console.log("Callback body:", JSON.stringify(callbackBody, null, 2))
 
   const stkCallback = callbackBody.Body?.stkCallback
 
   if (!stkCallback) {
-    console.error("Invalid callback structure - no stkCallback found")
+    console.error("❌ Invalid callback structure - no stkCallback found")
     console.log("Available Body keys:", Object.keys(callbackBody.Body || {}))
     return
   }
 
-  console.log("STK Callback data:", JSON.stringify(stkCallback, null, 2))
   console.log("Result Code:", stkCallback.ResultCode)
   console.log("Result Description:", stkCallback.ResultDesc)
-  
-  // Handle successful payment
+
   if (stkCallback.ResultCode === 0) {
-    console.log("🎉 Payment successful! Processing callback metadata...")
-    
-    const callbackMetadata = stkCallback.CallbackMetadata?.Item || []
-    console.log("Callback Metadata Items:", callbackMetadata)
+    // ── Payment successful ────────────────────────────────────────────────────
+    console.log("🎉 Payment successful!")
 
-    // Extracts all relevant data
-    const mpesaReceipt = callbackMetadata.find(
-      (item: any) => item.Name === "MpesaReceiptNumber"
-    )?.Value
+    const items: any[] = stkCallback.CallbackMetadata?.Item || []
 
-    const amount = callbackMetadata.find(
-      (item: any) => item.Name === "Amount"
-    )?.Value
+    const mpesaReceipt   = items.find((i) => i.Name === "MpesaReceiptNumber")?.Value
+    const amount         = items.find((i) => i.Name === "Amount")?.Value
+    const transactionDate = items.find((i) => i.Name === "TransactionDate")?.Value
+    const phone          = items.find((i) => i.Name === "PhoneNumber")?.Value
 
-    const transactionDate = callbackMetadata.find(
-      (item: any) => item.Name === "TransactionDate"
-    )?.Value
+    console.log("Receipt:", mpesaReceipt, "| Amount:", amount, "| Date:", transactionDate, "| Phone:", phone)
 
-    const phoneNumber = callbackMetadata.find(
-      (item: any) => item.Name === "PhoneNumber"
-    )?.Value
-
-    console.log("Extracted Data:")
-    console.log("  - M-Pesa Receipt:", mpesaReceipt)
-    console.log("  - Amount:", amount)
-    console.log("  - Transaction Date:", transactionDate)
-    console.log("  - Phone Number:", phoneNumber)
-
-    if (mpesaReceipt) {
-      console.log("💾 Updating payment to Completed with receipt:", mpesaReceipt)
-      
-      // Update payment record with success status and real M-Pesa receipt
-      const updateResult = await db
-        .update(PaymentTable)
-        .set({
-          paymentStatus: "Completed",
-          transactionId: mpesaReceipt,
-          updatedAt: new Date(),
-        })
-        .where(eq(PaymentTable.paymentId, paymentId))
-        .returning()
-
-      console.log("Payment update result:", updateResult)
-      console.log(`Payment ${paymentId} marked as Completed with receipt: ${mpesaReceipt}`)
-    } else {
-      console.error("No M-Pesa receipt found in callback metadata!")
-      console.log("Available metadata items:", callbackMetadata.map((item: any) => ({ Name: item.Name, Value: item.Value })))
+    if (!mpesaReceipt) {
+      console.error("❌ No MpesaReceiptNumber in callback metadata")
+      console.log("Items received:", items.map((i) => ({ Name: i.Name, Value: i.Value })))
+      return
     }
-    
+
+    // Update payment to Completed and store the real M-Pesa receipt number
+    const paymentUpdate = await db
+      .update(PaymentTable)
+      .set({
+        paymentStatus: "Completed",
+        transactionId: mpesaReceipt,
+        updatedAt: new Date(),
+      })
+      .where(eq(PaymentTable.paymentId, paymentId))
+      .returning()
+
+    console.log("✅ Payment marked Completed:", paymentUpdate)
+
+    // Also confirm the booking now that payment is complete
+    if (paymentUpdate.length > 0) {
+      const bookingId = paymentUpdate[0].bookingId
+      await db
+        .update(BookingTable)
+        .set({ bookingStatus: true, updatedAt: new Date() })
+        .where(eq(BookingTable.bookingId, bookingId))
+
+      console.log(`✅ Booking #${bookingId} confirmed`)
+    }
+
   } else {
-    // Handle failed payment
-    console.log("Payment failed!")
-    console.log("Result Code:", stkCallback.ResultCode)
-    console.log("Result Description:", stkCallback.ResultDesc)
-    
-    const updateResult = await db
+    // ── Payment failed / cancelled ────────────────────────────────────────────
+    console.log(`❌ Payment failed — Code: ${stkCallback.ResultCode} | ${stkCallback.ResultDesc}`)
+
+    await db
       .update(PaymentTable)
       .set({
         paymentStatus: "Failed",
@@ -156,9 +155,8 @@ export const handleMpesaCallback = async (paymentId: number, callbackBody: any) 
       .where(eq(PaymentTable.paymentId, paymentId))
       .returning()
 
-    console.log("Payment failure update result:", updateResult)
-    console.log(`Payment ${paymentId} marked as Failed`)
+    console.log(`Payment #${paymentId} marked as Failed`)
   }
 
-  console.log("Callback processing completed for payment:", paymentId)
+  console.log("✅ Callback processing complete for payment:", paymentId)
 }
