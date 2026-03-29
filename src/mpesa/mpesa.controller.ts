@@ -1,83 +1,107 @@
 import { Request, Response, RequestHandler } from "express";
-import {
-  initiateStkPush,
-  handleMpesaCallback,
-} from "./mpesa.service";
+import { initiateStkPush, handleMpesaCallback } from "./mpesa.service";
+
+// Normalize Kenyan numbers (07, 01, 011, 2547, etc.)
+const normalizePhone = (phone: string): string => {
+  let cleaned = phone.replace(/\D/g, ""); 
+
+  if (cleaned.startsWith("254")) return cleaned;
+
+  if (cleaned.startsWith("0")) {
+    return "254" + cleaned.substring(1);
+  }
+
+  // fallback (assume missing 0)
+  if (cleaned.length === 9) {
+    return "254" + cleaned;
+  }
+
+  return cleaned;
+};
+
+// Valid after normalization (Kenya mobile: 2547..., 2541...)
+const isValidPhone = (phone: string): boolean => {
+  return /^254[71]\d{8}$/.test(phone);
+};
 
 export const stkPushController: RequestHandler = async (req, res) => {
   try {
-    const { phoneNumber, amount, paymentId } = req.body
+    const { phoneNumber, amount, paymentId } = req.body;
 
     if (!phoneNumber || !amount || !paymentId) {
-      res.status(400).json({ success: false, message: "Missing required fields" })
-      return
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
     }
 
-    // Validate format (e.g., 254712345678)
-    if (!/^2547\d{8}$/.test(phoneNumber)) {
-      res.status(400).json({ success: false, message: "Invalid phone number format" })
-      return
+    const normalizedPhone = normalizePhone(phoneNumber);
+
+    if (!isValidPhone(normalizedPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Kenyan phone number",
+      });
+    }
+
+    if (isNaN(Number(amount)) || Number(amount) <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid amount",
+      });
     }
 
     const data = await initiateStkPush({
-      phoneNumber,
+      phoneNumber: normalizedPhone,
       amount: Number(amount),
       paymentId: Number(paymentId),
-    })
-
-    res.json({ success: true, data })
-  } catch (error: any) {
-  console.error("❌ FULL STK ERROR:");
-  console.error("Message:", error.message);
-  console.error("Status:", error.response?.status);
-  console.error("Data:", error.response?.data);
-
-  res.status(500).json({
-    success: false,
-    message: error.response?.data?.errorMessage || error.message || "STK push failed",
-  });
-}
-}
-
-export const mpesaCallbackController: RequestHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
-    console.log("M-Pesa Callback URL Hit!")
-    console.log("Query params:", req.query)
-    console.log("Request body:", JSON.stringify(req.body, null, 2))
-    console.log("Request headers:", req.headers)
-
-    const paymentIdParam = req.query.payment_id;
-    const paymentId = Number(paymentIdParam);
-
-    if (isNaN(paymentId)) {
-      console.error("❌ Invalid payment_id in callback:", paymentIdParam)
-      res.status(400).json({ message: "Invalid or missing payment_id" });
-      return;
-    }
-
-    console.log("✅ Processing callback for payment ID:", paymentId)
-
-    // Check if this is a valid M-Pesa callback structure
-    if (!req.body || !req.body.Body) {
-      console.error("❌ Invalid callback structure - missing Body")
-      res.status(400).json({ message: "Invalid callback structure" });
-      return;
-    }
-
-    await handleMpesaCallback(paymentId, req.body);
-
-    console.log("✅ Callback processed successfully for payment:", paymentId)
-    res.status(200).json({ 
-      ResultCode: 0, 
-      ResultDesc: "Callback processed successfully" 
     });
 
-  } catch (error) {
-    console.error("❌ Callback Error:", (error as Error).message);
-    console.error("📊 Error stack:", (error as Error).stack);
-    res.status(200).json({ 
-      ResultCode: 1, 
-      ResultDesc: "Failed to process callback" 
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    console.error("❌ STK ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.response?.data?.errorMessage ||
+        error.message ||
+        "STK push failed",
+    });
+  }
+};
+
+export const mpesaCallbackController: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    console.log("📩 M-Pesa Callback Received");
+
+    const paymentId = Number(req.query.payment_id);
+
+    if (isNaN(paymentId)) {
+      return res.status(400).json({ message: "Invalid payment_id" });
+    }
+
+    const stkCallback = req.body?.Body?.stkCallback;
+
+    if (!stkCallback) {
+      return res.status(400).json({ message: "Invalid callback payload" });
+    }
+
+    await handleMpesaCallback(paymentId, stkCallback);
+
+    return res.status(200).json({
+      ResultCode: 0,
+      ResultDesc: "Processed successfully",
+    });
+  } catch (error: any) {
+    console.error("❌ Callback Error:", error.message);
+
+    return res.status(200).json({
+      ResultCode: 1,
+      ResultDesc: "Callback processing failed",
     });
   }
 };

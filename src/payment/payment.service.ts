@@ -143,10 +143,39 @@ export const deletePaymentService = async (paymentId: number) => {
 };
 
 export const getPaymentByUserIdService = async (userId: number) => {
-  const payment = await db.query.PaymentTable.findMany({
-    where: eq(PaymentTable.userId, userId)
+  const payments = await db.query.PaymentTable.findMany({
+    where: eq(PaymentTable.userId, userId),
   });
-  return { data: payment };
+
+  const paymentsWithRelations = await Promise.all(
+    payments.map(async (p) => {
+      const booking = await db.query.BookingTable.findFirst({
+        where: eq(BookingTable.bookingId, p.bookingId),
+      });
+
+      const room = booking
+        ? await db.query.RoomTable.findFirst({
+            columns: { roomNumber: true, hostelId: true },
+            where: eq(RoomTable.roomId, booking.roomId),
+          })
+        : null;
+
+      const hostel = room
+        ? await db.query.HostelTable.findFirst({
+            columns: { hostelName: true },
+            where: eq(HostelTable.hostelId, room.hostelId),
+          })
+        : null;
+
+      return {
+        ...p,
+        roomNumber: room?.roomNumber ?? null,
+        hostelName: hostel?.hostelName ?? null,
+      };
+    })
+  );
+
+  return { data: paymentsWithRelations };
 };
 
 export const getByTransactionId = async (transactionId: string): Promise<TSPayment | undefined> => {
