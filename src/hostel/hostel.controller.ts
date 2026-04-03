@@ -12,7 +12,7 @@ export const createHostelController = async(req: MulterRequest, res: Response) =
         const imageUrl = req.file?.path || req.body.image_URL;
         const newHostelData = {
             ...hostel,
-            ...(imageUrl && {image_url: imageUrl})
+            ...(imageUrl && {image_URL: imageUrl})
         };
         const newHostel = await createHostelService(newHostelData);
         if (newHostel) {
@@ -71,7 +71,7 @@ export const updateHostelController = async (req: Request, res: Response) => {
         console.log(imageUrl);
         const updatedData = {
             ...hostel,
-            ...(imageUrl && {image_url: imageUrl})
+            ...(imageUrl && {image_URL: imageUrl})
         }
         console.log("UPDATED DATA:", updatedData);
         await updateHostelService(hostelId, updatedData);
