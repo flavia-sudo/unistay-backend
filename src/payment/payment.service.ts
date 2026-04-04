@@ -29,7 +29,7 @@ const syncBookingOnPayment = async (
           .set({ rooms_available: sql`GREATEST(${HostelTable.rooms_available} - 1, 0)` })
           .where(eq(HostelTable.hostelId, booking.hostelId));
         await db.update(RoomTable)
-          .set({ status: true }) // true = occupied
+          .set({ status: false }) // true = occupied
           .where(eq(RoomTable.roomId, booking.roomId));
       }
     }
@@ -44,7 +44,7 @@ const syncBookingOnPayment = async (
     });
     if (booking) {
       await db.update(RoomTable)
-        .set({ status: false }) // false = available again
+        .set({ status: true }) // false = available again
         .where(eq(RoomTable.roomId, booking.roomId));
       await db.update(HostelTable)
         .set({ rooms_available: sql`${HostelTable.rooms_available} + 1` })
