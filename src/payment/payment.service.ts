@@ -2,8 +2,23 @@ import db from "../Drizzle/db";
 import { PaymentTable, TIPayment, TSPayment, BookingTable, UserTable, RoomTable, HostelTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
 
+// export const createPaymentService = async (payment: TIPayment) => {
+//   const [inserted] = await db.insert(PaymentTable).values(payment).returning();
+//   return inserted ?? null;
+// };
+
+
 export const createPaymentService = async (payment: TIPayment) => {
   const [inserted] = await db.insert(PaymentTable).values(payment).returning();
+
+  // ✅ Auto-confirm booking when payment is completed
+  if (inserted && inserted.paymentStatus === "Completed") {
+    await db
+      .update(BookingTable)
+      .set({ bookingStatus: true })
+      .where(eq(BookingTable.bookingId, inserted.bookingId));
+  }
+
   return inserted ?? null;
 };
 
@@ -132,8 +147,32 @@ export const getPaymentByBookingIdService = async (bookingId: number) => {
   };
 };
 
+// export const updatePaymentService = async (paymentId: number, payment: TIPayment) => {
+//   const [updated] = await db.update(PaymentTable).set(payment).where(eq(PaymentTable.paymentId, paymentId)).returning();
+//   return updated ?? null;
+// };
 export const updatePaymentService = async (paymentId: number, payment: TIPayment) => {
-  const [updated] = await db.update(PaymentTable).set(payment).where(eq(PaymentTable.paymentId, paymentId)).returning();
+  const [updated] = await db
+    .update(PaymentTable)
+    .set(payment)
+    .where(eq(PaymentTable.paymentId, paymentId))
+    .returning();
+
+  // ✅ Sync booking status when payment status changes
+  if (updated) {
+    if (updated.paymentStatus === "Completed") {
+      await db
+        .update(BookingTable)
+        .set({ bookingStatus: true })
+        .where(eq(BookingTable.bookingId, updated.bookingId));
+    } else if (updated.paymentStatus === "Cancelled") {
+      await db
+        .update(BookingTable)
+        .set({ bookingStatus: false })
+        .where(eq(BookingTable.bookingId, updated.bookingId));
+    }
+  }
+
   return updated ?? null;
 };
 

@@ -8,7 +8,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -25,16 +24,19 @@ async function migrateImages() {
 
   for (const hostel of hostels) {
     let fileName = hostel.image_URL;
-
     if (!fileName) continue;
 
-    // Skip default placeholder images
     if (fileName.includes("00000000000000000000000000000000")) {
       console.log(`Skipping hostel ${hostel.hostelId}, placeholder image`);
       continue;
     }
 
-    // Get only the filename
+    // ✅ Skip already-migrated Cloudinary URLs
+    if (fileName.startsWith("https://res.cloudinary.com")) {
+      console.log(`Hostel ${hostel.hostelId} already on Cloudinary, skipping`);
+      continue;
+    }
+
     fileName = path.basename(fileName);
     const absolutePath = path.join(__dirname, "../../assets/images", fileName);
 
@@ -52,7 +54,6 @@ async function migrateImages() {
 
       console.log(`Uploaded hostel ${hostel.hostelId}: ${result.secure_url}`);
 
-      // Update DB
       await db
         .update(HostelTable)
         .set({ image_URL: result.secure_url })
