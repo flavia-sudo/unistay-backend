@@ -39,7 +39,7 @@ export const HostelTable = pgTable("hostel", {
     description: text("description").notNull(),
     image_URL: varchar("image_url", { length: 255 }).default("https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"),
     price: integer("price").notNull(),
-    roomsAvailable: integer("rooms_available").notNull().default(0),
+    rooms_available: integer("rooms_available").notNull().default(0),
 })
 
 export const RoomTable = pgTable("room", {
@@ -108,7 +108,7 @@ export const UserRelations = relations(UserTable, ({ many, one }) => ({
     }),
     hostelsAsStudent: one(HostelTable),
     reviews: many(ReviewTable),
-    bookings: one(BookingTable),
+    bookings: many(BookingTable),
     payments: many(PaymentTable),
 }))
 
