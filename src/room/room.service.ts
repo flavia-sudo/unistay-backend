@@ -2,13 +2,14 @@ import db from "../Drizzle/db";
 import { RoomTable, TIRoom } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
 
+// room.service.ts
 export const createRoomService = async (room: TIRoom) => {
-    const [ inserted ] = await db.insert(RoomTable).values(room).returning();
-    if (inserted) {
-        return inserted;
-    }
-    return null;
-}
+    const [inserted] = await db.insert(RoomTable).values({
+        status: true,  
+        ...room,
+    }).returning();
+    return inserted ?? null;
+};
 
 export const getRoomsService = async () => {
     const rooms = await db.query.RoomTable.findMany();

@@ -51,7 +51,7 @@ export const RoomTable = pgTable("room", {
     price: varchar("price").notNull(),
     capacity: varchar("capacity").notNull(),
     description: text("description").notNull(),
-    status: boolean("status").notNull().default(false),
+    status: boolean("status").notNull().default(true),
 })
 
 export const BookingTable = pgTable("booking", {
