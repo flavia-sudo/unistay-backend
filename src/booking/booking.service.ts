@@ -18,6 +18,7 @@ export const getBookingService = async () => {
       checkInDate: true,
       totalAmount: true,
       bookingStatus: true,
+      duration: true, 
       createdAt: true,
     },
   });
@@ -145,7 +146,8 @@ export const getBookingByRoomIdService = async (roomId: number) => {
 
 /* ---------------- UPDATE ---------------- */
 export const updateBookingService = async (Id: number, booking: TIBooking) => {
-  const updated = await db.update(BookingTable).set(booking).where(eq(BookingTable.bookingId, Id)).returning();
+  const updated = await db.update(BookingTable).set(booking)
+    .where(eq(BookingTable.bookingId, Id)).returning();
   return updated;
 };
 

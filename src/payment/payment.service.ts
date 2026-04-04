@@ -1,6 +1,7 @@
 import db from "../Drizzle/db";
 import { PaymentTable, TIPayment, TSPayment, BookingTable, UserTable, RoomTable, HostelTable } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 // export const createPaymentService = async (payment: TIPayment) => {
 //   const [inserted] = await db.insert(PaymentTable).values(payment).returning();
@@ -8,17 +9,55 @@ import { eq } from "drizzle-orm";
 // };
 
 
+// Helper: sync booking status and decrement rooms when payment completes
+const syncBookingOnPayment = async (
+  bookingId: number,
+  status: string,
+  previousStatus?: string
+) => {
+  if (status === "Completed") {
+    await db.update(BookingTable)
+      .set({ bookingStatus: true })
+      .where(eq(BookingTable.bookingId, bookingId));
+
+    if (previousStatus !== "Completed") {
+      const booking = await db.query.BookingTable.findFirst({
+        where: eq(BookingTable.bookingId, bookingId),
+      });
+      if (booking) {
+        await db.update(HostelTable)
+          .set({ rooms_available: sql`GREATEST(${HostelTable.rooms_available} - 1, 0)` })
+          .where(eq(HostelTable.hostelId, booking.hostelId));
+        await db.update(RoomTable)
+          .set({ status: true }) // true = occupied
+          .where(eq(RoomTable.roomId, booking.roomId));
+      }
+    }
+  } else if (status === "Cancelled" || status === "Failed") {
+    await db.update(BookingTable)
+      .set({ bookingStatus: false })
+      .where(eq(BookingTable.bookingId, bookingId));
+
+    // ✅ Also free the room back when payment fails/cancels
+    const booking = await db.query.BookingTable.findFirst({
+      where: eq(BookingTable.bookingId, bookingId),
+    });
+    if (booking) {
+      await db.update(RoomTable)
+        .set({ status: false }) // false = available again
+        .where(eq(RoomTable.roomId, booking.roomId));
+      await db.update(HostelTable)
+        .set({ rooms_available: sql`${HostelTable.rooms_available} + 1` })
+        .where(eq(HostelTable.hostelId, booking.hostelId));
+    }
+  }
+};
+
+
+
 export const createPaymentService = async (payment: TIPayment) => {
   const [inserted] = await db.insert(PaymentTable).values(payment).returning();
-
-  // ✅ Auto-confirm booking when payment is completed
-  if (inserted && inserted.paymentStatus === "Completed") {
-    await db
-      .update(BookingTable)
-      .set({ bookingStatus: true })
-      .where(eq(BookingTable.bookingId, inserted.bookingId));
-  }
-
+  if (inserted) await syncBookingOnPayment(inserted.bookingId, inserted.paymentStatus ?? "");
   return inserted ?? null;
 };
 
@@ -152,30 +191,23 @@ export const getPaymentByBookingIdService = async (bookingId: number) => {
 //   return updated ?? null;
 // };
 export const updatePaymentService = async (paymentId: number, payment: TIPayment) => {
-  const [updated] = await db
-    .update(PaymentTable)
-    .set(payment)
-    .where(eq(PaymentTable.paymentId, paymentId))
-    .returning();
+  // Get previous status before update
+  const existing = await db.query.PaymentTable.findFirst({
+    where: eq(PaymentTable.paymentId, paymentId),
+  });
 
-  // ✅ Sync booking status when payment status changes
+  const [updated] = await db.update(PaymentTable).set(payment)
+    .where(eq(PaymentTable.paymentId, paymentId)).returning();
+
   if (updated) {
-    if (updated.paymentStatus === "Completed") {
-      await db
-        .update(BookingTable)
-        .set({ bookingStatus: true })
-        .where(eq(BookingTable.bookingId, updated.bookingId));
-    } else if (updated.paymentStatus === "Cancelled") {
-      await db
-        .update(BookingTable)
-        .set({ bookingStatus: false })
-        .where(eq(BookingTable.bookingId, updated.bookingId));
-    }
+    await syncBookingOnPayment(
+      updated.bookingId,
+      updated.paymentStatus ?? "",
+      existing?.paymentStatus ?? ""
+    );
   }
-
   return updated ?? null;
 };
-
 export const deletePaymentService = async (paymentId: number) => {
   const [deleted] = await db.delete(PaymentTable).where(eq(PaymentTable.paymentId, paymentId)).returning();
   return deleted ?? null;

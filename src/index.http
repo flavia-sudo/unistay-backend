@@ -1,5 +1,5 @@
 ### Test Route
-GET http://localhost:3000
+GET https://hostel-backend-fyy3.onrender.com
 
 ### Create
 POST https://hostel-backend-fyy3.onrender.com

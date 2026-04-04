@@ -1,9 +1,9 @@
 import { Express, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import { v2 as cloudinary } from 'cloudinary'; // ✅ import v2 directly, not your config file
+import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
-dotenv.config(); // ✅ ensure env vars are loaded before cloudinary.config()
+dotenv.config();
 
 import {
   createHostelController,
@@ -12,9 +12,10 @@ import {
   getHostelByIdController,
   getHostelByUserIdController,
   deleteHostelController,
+  createHostelWithRoomsController, // ✅ ADD THIS
 } from './hostel.controller';
 
-// ✅ Configure cloudinary HERE, right before storage is created
+// Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -32,45 +33,91 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 const hostel = (app: Express) => {
-  app.post('/hostel', upload.single('file'),
+
+  // =====================================================
+  // ✅ NEW ROUTE (MUST BE BEFORE OTHER /hostel ROUTES)
+  // =====================================================
+  app.post(
+    '/hostel/with-rooms',
+    upload.single('file'),
     async (req: Request, res: Response, next: NextFunction) => {
-      try { await createHostelController(req as any, res); }
-      catch (error) { next(error); }
+      try {
+        await createHostelWithRoomsController(req as any, res);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 
-  app.get('/hostel_all',
+  // =====================================================
+  // EXISTING ROUTES
+  // =====================================================
+
+  app.post(
+    '/hostel',
+    upload.single('file'),
     async (req: Request, res: Response, next: NextFunction) => {
-      try { await getHostelsController(req, res); }
-      catch (error) { next(error); }
+      try {
+        await createHostelController(req as any, res);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 
-  app.get('/hostel/user/:userId',
+  app.get(
+    '/hostel_all',
     async (req: Request, res: Response, next: NextFunction) => {
-      try { await getHostelByUserIdController(req, res); }
-      catch (error) { next(error); }
+      try {
+        await getHostelsController(req, res);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 
-  app.get('/hostel/:hostelId',
+  app.get(
+    '/hostel/user/:userId',
     async (req: Request, res: Response, next: NextFunction) => {
-      try { await getHostelByIdController(req, res); }
-      catch (error) { next(error); }
+      try {
+        await getHostelByUserIdController(req, res);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 
-  app.put('/hostel/:hostelId', upload.single('file'),
+  app.get(
+    '/hostel/:hostelId',
     async (req: Request, res: Response, next: NextFunction) => {
-      try { await updateHostelController(req as any, res); }
-      catch (error) { next(error); }
+      try {
+        await getHostelByIdController(req, res);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 
-  app.delete('/hostel/:hostelId',
+  app.put(
+    '/hostel/:hostelId',
+    upload.single('file'),
     async (req: Request, res: Response, next: NextFunction) => {
-      try { await deleteHostelController(req, res); }
-      catch (error) { next(error); }
+      try {
+        await updateHostelController(req as any, res);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  app.delete(
+    '/hostel/:hostelId',
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        await deleteHostelController(req, res);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 };
